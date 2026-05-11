@@ -24,3 +24,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Consistent grayish placeholder styling */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+select {
+  color-scheme: light;
+  color: #9ca3af;
+}
+
+select option {
+  color: #111827;
+  background-color: white;
+}
+
+select option:disabled {
+  color: #9ca3af;
+}

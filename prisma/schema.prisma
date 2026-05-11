@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role[]     @default([BUYER])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings Listing[]
+
+  buyerConversations  Conversation[] @relation("BuyerConversations")
+  sellerConversations Conversation[] @relation("SellerConversations")
+  messages            Message[]
+}
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+model Listing {
+  id          String   @id @default(cuid())
+  sellerId    String
+  title       String
+  description String
+  price       Float
+  quantity    Int
+  unit        Unit
+  category    Category
+  province    String
+  city        String
+  images      String[] // Cloudinary URLs
+  video       String?  // optional
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relation to User table
+  seller User @relation(fields: [sellerId], references: [id])
+}
+
+enum Category {
+  CROP
+  LIVESTOCK
+  EQUIPMENT
+  SERVICE
+}
+
+enum Unit {
+  KG
+  TON
+  PIECE
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  buyerId   String
+  sellerId  String
+
+  buyer  User @relation("BuyerConversations", fields: [buyerId], references: [id])
+  seller User @relation("SellerConversations", fields: [sellerId], references: [id])
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([buyerId, sellerId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  text           String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation(fields: [senderId], references: [id])
+}
