@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { prisma } from "../lib/prisma";
 import { redirect } from "next/navigation";
+import { Role } from "@prisma/client";
 
 export async function becomeSeller() {
   const cookieStore = await cookies();
@@ -20,9 +21,9 @@ export async function becomeSeller() {
     throw new Error("User not found");
   }
 
-  const updatedRoles = user.role.includes("SELLER")
+  const updatedRoles: Role[] = user.role.includes(Role.SELLER)
     ? user.role
-    : [...user.role, "SELLER"];
+    : [...user.role, Role.SELLER];
 
   await prisma.user.update({
     where: { id: userId },
