@@ -22,70 +22,72 @@ export default function ChatClient({
 
   // SOCKET SETUP + MARK AS READ ON OPEN
   useEffect(() => {
-    socket.connect();
+  if (typeof window !== "undefined") {
+    const raw = window.localStorage.getItem(
+      "khetconnect_read_conversations"
+    );
 
-    socket.emit("join_conversation", conversationId);
+    let readIds: string[] = [];
 
-    socket.on("receive_message", (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
-    });
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
 
-    if (typeof window !== "undefined") {
-      const raw = window.localStorage.getItem("khetconnect_read_conversations");
-      let readIds: string[] = [];
-
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            readIds = parsed;
-          }
-        } catch {
-          readIds = [];
+        if (Array.isArray(parsed)) {
+          readIds = parsed;
         }
-      }
-
-      if (!readIds.includes(conversationId)) {
-        const updated = [...readIds, conversationId];
-        window.localStorage.setItem("khetconnect_read_conversations", JSON.stringify(updated));
+      } catch {
+        readIds = [];
       }
     }
 
-    return () => {
-      socket.off("receive_message");
-    };
-  }, [conversationId]);
+    if (!readIds.includes(conversationId)) {
+      const updated = [...readIds, conversationId];
 
+      window.localStorage.setItem(
+        "khetconnect_read_conversations",
+        JSON.stringify(updated)
+      );
+    }
+  }
+}, [conversationId]);
   // SEND MESSAGE
   const sendMessage = async () => {
-    if (!input.trim()) return;
+  if (!input.trim()) return;
 
-    const newMessage = {
-      conversationId,
-      senderId: userId,
-      text: input,
-    };
-
-    // SAVE IN DB
-    await fetch("/api/message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        conversationId,
-        senderId: userId,
-        text: input,
-      }),
-    });
-
-    // REAL-TIME
-    socket.emit("send_message", {
-      conversationId,
-      message: newMessage,
-    });
-
-    setInput("");
+  const newMessage = {
+    conversationId,
+    senderId: userId,
+    text: input,
   };
 
+  try {
+    const res = await fetch("/api/message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newMessage),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      // instantly show message in UI
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: input,
+          senderId: userId,
+        },
+      ]);
+
+      setInput("");
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
   return (
     <div className="h-screen flex flex-col bg-gray-100">
 
